@@ -1,0 +1,23 @@
+### List tariffs
+GET http://127.0.0.1:8000/tariffs
+Accept: application/json
+
+###
+
+### Create a card payment
+POST http://127.0.0.1:8000/payments
+Content-Type: application/json
+Idempotency-Key: sample-order-1
+
+{
+  "tariff_id": "standard",
+  "email": "student@example.com",
+  "method": "card",
+  "promo_code": "KVITTO10"
+}
+
+###
+
+### Filter payments
+GET http://127.0.0.1:8000/payments?email=student@example.com&status=pending
+Accept: application/json
