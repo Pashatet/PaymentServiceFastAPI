@@ -4,10 +4,20 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 from app.domain.entities import Payment, Tariff
 from app.domain.enums import PaymentMethod, PaymentStatus
+from app.domain.errors import InvalidPromoCode
+from app.domain.pricing import validate_promo_code
 
 
 class PaymentCreateRequest(BaseModel):
@@ -17,12 +27,31 @@ class PaymentCreateRequest(BaseModel):
     installment_months: Literal[3, 6, 12] | None = None
     promo_code: str | None = Field(default=None, max_length=32)
 
+    @field_validator("promo_code")
+    @classmethod
+    def validate_promo_code_field(cls, value: str | None) -> str | None:
+        try:
+            validate_promo_code(value)
+        except InvalidPromoCode as error:
+            raise ValueError("unknown promo code") from error
+        return value
+
+    @field_validator("installment_months", mode="before")
+    @classmethod
+    def validate_installment_months_field(
+        cls, value: object, info: ValidationInfo
+    ) -> object:
+        method = info.data.get("method")
+        if value is not None and method is not PaymentMethod.INSTALLMENT:
+            raise ValueError(
+                "installment_months is only allowed for installment payments"
+            )
+        return value
+
     @model_validator(mode="after")
     def validate_installment_fields(self) -> PaymentCreateRequest:
         if self.method is PaymentMethod.INSTALLMENT and self.installment_months is None:
             raise ValueError("installment_months is required for installment payments")
-        if self.method is not PaymentMethod.INSTALLMENT and self.installment_months is not None:
-            raise ValueError("installment_months is only allowed for installment payments")
         return self
 
 

@@ -1,12 +1,10 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Path, Query, Response
-from fastapi.exceptions import RequestValidationError
+from fastapi import APIRouter, Header, Path, Query, Request, Response
 from pydantic import EmailStr
 
 from app.domain.enums import PaymentStatus
-from app.domain.errors import InvalidPromoCode
 from app.payments.dependencies import PaymentServiceDep
 from app.payments.schemas import (
     BankWebhookRequest,
@@ -48,20 +46,7 @@ async def create_payment(
         promo_code=payload.promo_code,
         idempotency_key=idempotency_key,
     )
-    try:
-        result = await service.create_payment(command)
-    except InvalidPromoCode as error:
-        raise RequestValidationError(
-            [
-                {
-                    "type": "value_error",
-                    "loc": ("body", "promo_code"),
-                    "msg": "Value error, unknown promo code",
-                    "input": error.code,
-                    "ctx": {"error": "unknown promo code"},
-                }
-            ]
-        ) from error
+    result = await service.create_payment(command)
 
     if not result.created:
         response.status_code = 200
@@ -96,12 +81,15 @@ async def get_payment(
 
 @router.post(
     "/webhooks/bank",
-    dependencies=[Depends(verify_webhook_signature)],
     tags=["webhooks"],
 )
 async def bank_webhook(
     payload: BankWebhookRequest,
     service: PaymentServiceDep,
+    request: Request,
+    signature: Annotated[str | None, Header(alias="X-Signature")] = None,
 ) -> dict[str, str]:
+    await service.get_payment(payload.payment_id)
+    await verify_webhook_signature(request, signature)
     await service.transition_payment(payload.payment_id, payload.status)
     return {"result": "ok"}

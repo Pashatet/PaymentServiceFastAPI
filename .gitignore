@@ -4,5 +4,5 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 test.db
-migrations
-.github
+.meta/
+.idea/

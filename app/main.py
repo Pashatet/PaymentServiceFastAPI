@@ -47,9 +47,27 @@ def create_app(
     app.include_router(router)
 
     @app.exception_handler(PaymentNotFound)
-    @app.exception_handler(TariffNotFound)
     async def not_found_handler(request: Request, error: Exception) -> JSONResponse:
         return JSONResponse(status_code=404, content={"detail": str(error)})
+
+    @app.exception_handler(TariffNotFound)
+    async def tariff_not_found_handler(
+        request: Request, error: TariffNotFound
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": [
+                    {
+                        "type": "value_error",
+                        "loc": ["body", "tariff_id"],
+                        "msg": "Value error, unknown tariff_id",
+                        "input": error.tariff_id,
+                        "ctx": {"error": {}},
+                    }
+                ]
+            },
+        )
 
     @app.exception_handler(InvalidStatusTransition)
     async def invalid_transition_handler(

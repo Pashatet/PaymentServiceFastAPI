@@ -133,6 +133,27 @@ async def test_missing_payment_returns_404(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+async def test_webhook_missing_payment_returns_404_before_signature_check(
+    client: AsyncClient,
+) -> None:
+    body = json.dumps(
+        {
+            "payment_id": "00000000-0000-0000-0000-000000000000",
+            "status": "succeeded",
+        },
+        separators=(",", ":"),
+    ).encode()
+    response = await client.post(
+        "/webhooks/bank",
+        content=body,
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"].startswith("Payment UUID(")
+
+
+@pytest.mark.asyncio
 async def test_webhook_requires_valid_signature_and_changes_status(
     client: AsyncClient,
 ) -> None:

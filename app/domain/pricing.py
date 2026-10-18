@@ -4,13 +4,19 @@ PROMO_CODE = "KVITTO10"
 PROMO_DISCOUNT_PERCENT = 10
 
 
-def calculate_discount(price: int, promo_code: str | None) -> int:
+def validate_promo_code(promo_code: str | None) -> None:
     if promo_code is None or not promo_code.strip():
-        return 0
+        return
 
     normalized_code = promo_code.strip().upper()
     if normalized_code != PROMO_CODE:
         raise InvalidPromoCode(promo_code)
+
+
+def calculate_discount(price: int, promo_code: str | None) -> int:
+    validate_promo_code(promo_code)
+    if promo_code is None or not promo_code.strip():
+        return 0
 
     return price * PROMO_DISCOUNT_PERCENT // 100
 

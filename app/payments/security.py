@@ -1,15 +1,14 @@
 import hashlib
 import hmac
-from typing import Annotated
 
-from fastapi import Header, Request
+from fastapi import Request
 
 from app.domain.errors import InvalidWebhookSignature
 
 
 async def verify_webhook_signature(
     request: Request,
-    signature: Annotated[str | None, Header(alias="X-Signature")] = None,
+    signature: str | None,
 ) -> None:
     if signature is None:
         raise InvalidWebhookSignature("Missing X-Signature header")
