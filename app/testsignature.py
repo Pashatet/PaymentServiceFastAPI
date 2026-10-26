@@ -1,6 +1,5 @@
 import hashlib
 import hmac
-import urllib.request
 
 # body = b'{"payment_id":"ВСТАВЬТЕ_ID_ПЛАТЕЖА","status":"succeeded"}'
 # secret = b"ВСТАВЬТЕ_WEBHOOK_SECRET_ИЗ_.env"
