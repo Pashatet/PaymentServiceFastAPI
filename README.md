@@ -20,6 +20,10 @@ app/
     ├── schemas.py
     ├── security.py
     └── service.py
+migrations/
+├── env.py
+└── versions/
+    └── 0001_initial.py
 ~~~
 
 ## Запуск в Docker
@@ -45,9 +49,14 @@ app/
 
 1. Создайте и активируйте виртуальное окружение.
 2. Установите зависимости: pip install -r requirements-dev.txt
-3. Скопируйте .env.example в .env и при необходимости измените параметры PostgreSQL, DATABASE_URL и WEBHOOK_SECRET. Для Docker Compose DATABASE_URL должен использовать хост db; при прямом запуске uvicorn на компьютере замените хост db на localhost.
+3. Настройте переменные окружения `DATABASE_URL` и `WEBHOOK_SECRET`. Для прямого запуска приложения используйте `localhost` в `DATABASE_URL`; в Docker Compose база доступна приложению по имени хоста `db`.
 4. Примените миграции: alembic upgrade head
 5. Запустите API: uvicorn app.main:app --reload
+
+Чтобы создать миграцию после изменения SQLAlchemy-моделей, запустите из корня проекта
+`alembic revision --autogenerate -m "описание изменения"`, затем проверьте созданный
+файл в `migrations/versions/` и примените его командой `alembic upgrade head`.
+Для автогенерации Alembic должен подключиться к базе из `DATABASE_URL`.
 
 ## Деньги и правила оплаты
 
@@ -62,25 +71,28 @@ app/
 Список тарифов:
 
 ~~~bash
-curl.exe http://localhost:8000/tariffs
+curl http://localhost:8000/tariffs
 ~~~
 
 Создание платежа:
 
 ~~~bash
-curl.exe -X POST http://localhost:8000/payments -H "Content-Type: application/json" -H "Idempotency-Key: order-1001" -d "{\"tariff_id\":\"standard\",\"email\":\"student@example.com\",\"method\":\"installment\",\"installment_months\":3,\"promo_code\":\"kvittO10\"}"
+curl -X POST http://localhost:8000/payments \
+  -H 'Content-Type: application/json' \
+  -H 'Idempotency-Key: order-1001' \
+  -d '{"tariff_id":"standard","email":"student@example.com","method":"installment","installment_months":3,"promo_code":"kvittO10"}'
 ~~~
 
 Получение платежа по id:
 
 ~~~bash
-curl.exe http://localhost:8000/payments/PASTE_PAYMENT_UUID_HERE
+curl http://localhost:8000/payments/PASTE_PAYMENT_UUID_HERE
 ~~~
 
 Фильтры по email и статусу:
 
 ~~~bash
-curl.exe "http://localhost:8000/payments?email=student@example.com&status=pending"
+curl 'http://localhost:8000/payments?email=student@example.com&status=pending'
 ~~~
 
 ## Подпись банковского вебхука
@@ -111,10 +123,10 @@ pip install -r requirements-dev.txt
 pytest
 ~~~
 
-Проверка Ruff:
+Проверка Ruff (временный локальный скрипт `app/testsignature.py` исключён):
 
 ~~~bash
-ruff check .
+ruff check . --exclude app/testsignature.py
 ~~~
 
-Тесты используют SQLite in-memory, поэтому для проверки не нужен отдельный сервер PostgreSQL. Папка .github/workflows запускает Ruff и pytest при push и pull request.
+Тесты используют SQLite in-memory, поэтому для проверки не нужен отдельный сервер PostgreSQL. GitHub Actions запускает Ruff и pytest при push и pull request.
