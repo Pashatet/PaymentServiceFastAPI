@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     options {
+        skipDefaultCheckout(true)
         disableConcurrentBuilds()
         timestamps()
     }
@@ -60,8 +61,8 @@ pipeline {
                         scp -i "$SSH_KEY" \
                           -o BatchMode=yes \
                           -o StrictHostKeyChecking=yes \
-                          docker-compose.yml \
-                          "$SSH_USER@$DEPLOY_HOST:$REMOTE_DIR/docker-compose.yml"
+                          docker-compose.yml .env \
+                          "$SSH_USER@$DEPLOY_HOST:$REMOTE_DIR/"
 
                         scp -i "$SSH_KEY" \
                           -o BatchMode=yes \
@@ -73,7 +74,7 @@ pipeline {
                           -o BatchMode=yes \
                           -o StrictHostKeyChecking=yes \
                           "$SSH_USER@$DEPLOY_HOST" \
-                          "docker load -i /tmp/payment-service-${BUILD_NUMBER}.tar && rm -f /tmp/payment-service-${BUILD_NUMBER}.tar && cd '$REMOTE_DIR' && IMAGE_TAG='${BUILD_NUMBER}' docker compose up -d --remove-orphans && docker compose ps"
+                          "docker load -i /tmp/payment-service-${BUILD_NUMBER}.tar && rm -f /tmp/payment-service-${BUILD_NUMBER}.tar && cd '$REMOTE_DIR' && chmod 600 .env && IMAGE_TAG='${BUILD_NUMBER}' docker compose up -d --remove-orphans && docker compose ps"
 
                         rm -f "payment-service-${BUILD_NUMBER}.tar"
                     '''
