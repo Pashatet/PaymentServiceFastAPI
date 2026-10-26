@@ -27,7 +27,7 @@ pipeline {
                       -v "$WORKSPACE:/workspace" \
                       -w /workspace \
                       python:3.12-slim \
-                      sh -c 'python -m pip install --no-cache-dir -r requirements-dev.txt && ruff check --no-cache app tests && pytest -q -p no:cacheprovider'
+                      sh -c 'python -m pip install --no-cache-dir -r requirements-dev.txt && ruff check --no-cache app tests && PYTHONPATH=/workspace python -m pytest -q -p no:cacheprovider'
                 '''
             }
         }
